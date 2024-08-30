@@ -1,4 +1,5 @@
 const Db = require("../../../../../brain/utils/db");
+const { USER_ROLES } = require("../../../../../brain/utils/enums");
 const { COLLECTION_NAMES } = require("../../../../../brain/utils/modelEnums");
 const {
   serverErrorResponse,
@@ -12,16 +13,18 @@ exports.getAllUsers = async (req, res) => {
   try {
     
     const [users, usersError] = await Db.fetchAll({
-      collection: COLLECTION_NAMES.USERMODEL,
-      query: {
-        _id: { $ne: new ObjectId(req.user.id) },
-      },
-      projection: { __v: 0, password: 0, role: 0, createdAt: 0, updatedAt: 0 },
-    });
+        collection: COLLECTION_NAMES.USERMODEL,
+        query: {
+          _id: { $ne: new ObjectId(req.user.id) },
+          ...(req.user.role === USER_ROLES.ADMIN ? { role: { $ne: USER_ROLES.SUPERADMIN } } : {})
+        },
+        projection: { __v: 0, password: 0, createdAt: 0, updatedAt: 0 }
+      });
 
     if (usersError) {
       return unprocessableEntityResponse({
         res,
+        error: usersError
       });
     }
 
